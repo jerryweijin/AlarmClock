@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name_in_cap">CLOCK</string>
+    <string name="app_name_cap_first_letter">Clock</string>
+    <string name="app_version">Version 7.0.69-18</string>
+    <string name="menu_delete">Delete</string>
+    <string name="about_clock">About Clock</string>
+    <string name="about_clock_in_cap">ABOUT CLOCK</string>
+    <string name="Open_source_licenses">Open source licenses</string>
+</resources>
