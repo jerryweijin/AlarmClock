@@ -7,9 +7,11 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
     ActionBar actionBar;
+    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
