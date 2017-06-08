@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
         actionBar = getSupportActionBar();
         actionBar.setElevation(0);
+
     }
 
     @Override
