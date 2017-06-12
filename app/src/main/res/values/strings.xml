@@ -1,9 +1,14 @@
 <resources>
-    <string name="app_name_in_cap">CLOCK</string>
-    <string name="app_name_cap_first_letter">Clock</string>
-    <string name="app_version">Version 7.0.69-18</string>
-    <string name="menu_delete">Delete</string>
-    <string name="about_clock">About Clock</string>
-    <string name="about_clock_in_cap">ABOUT CLOCK</string>
-    <string name="Open_source_licenses">Open source licenses</string>
+    <string name="appNameInCap">CLOCK</string>
+    <string name="appName">Clock</string>
+    <string name="appVersion">Version 7.0.69-18</string>
+    <string name="menuDelete">Delete</string>
+    <string name="menuAboutClock">About Clock</string>
+    <string name="aboutClockPageTitle">ABOUT CLOCK</string>
+    <string name="openSourceLicenses">Open source licenses</string>
+    <string name="alarmFragmentTitle">ALARM</string>
+    <string name="worldClockFragmentTitle">WORLD CLOCK</string>
+    <string name="stopwatchFragmentTitle">STOPWATCH</string>
+    <string name="timerFragmentTitle">TIMER</string>
+
 </resources>

@@ -15,6 +15,6 @@ public class AboutClockActivity extends AppCompatActivity {
         setContentView(R.layout.activity_about_clock);
 
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle(R.string.about_clock_in_cap);
+        actionBar.setTitle(R.string.aboutClockPageTitle);
     }
 }
