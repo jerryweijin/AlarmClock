@@ -10,5 +10,6 @@
     <string name="worldClockFragmentTitle">WORLD CLOCK</string>
     <string name="stopwatchFragmentTitle">STOPWATCH</string>
     <string name="timerFragmentTitle">TIMER</string>
+    <string name="initialStopWatchValue">00:00:00</string>
 
 </resources>

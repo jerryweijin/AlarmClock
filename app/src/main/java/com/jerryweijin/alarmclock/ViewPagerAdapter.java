@@ -33,6 +33,7 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
             default:
                 return null;
         }
+
     }
 
     @Override
