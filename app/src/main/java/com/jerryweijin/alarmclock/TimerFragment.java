@@ -1,9 +1,17 @@
 package com.jerryweijin.alarmclock;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +36,7 @@ public class TimerFragment extends Fragment {
     TextView minuteLabel;
     TextView secondLabel;
     int countTime;
+    Context context;
 
     @Nullable
     @Override
@@ -43,6 +52,7 @@ public class TimerFragment extends Fragment {
         hourLabel = (TextView) view.findViewById(R.id.hourLabel);
         minuteLabel = (TextView) view.findViewById(R.id.minuteLabel);
         secondLabel = (TextView) view.findViewById(R.id.secondLabel);
+        context = getContext();
 
         String[] hours = new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"};
         hourPicker.setMinValue(0);
@@ -77,7 +87,23 @@ public class TimerFragment extends Fragment {
 
                     @Override
                     public void onFinish() {
-                        countDownTextView.setText("Done");
+                        countDownTextView.setText("00 : 00 : 00");
+                        Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                        Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
+
+                        if (ringtoneSound != null) {
+                            ringtoneSound.play();
+                        }
+
+                        Notification notification = new NotificationCompat.Builder(context)
+                                .setPriority(Notification.PRIORITY_MAX)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("My notification")
+                                .setContentText("Hello World!")
+                                .setDefaults(Notification.DEFAULT_ALL)
+                                .build();
+                        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        notificationManager.notify(1, notification);
                     }
                 };
                 timer.start();
