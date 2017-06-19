@@ -19,6 +19,7 @@
         <activity android:name=".AboutClockActivity" android:parentActivityName=".MainActivity">
 
         </activity>
+        <service android:name=".TimerNotificationService" />
     </application>
 
 </manifest>

@@ -2,7 +2,9 @@ package com.jerryweijin.alarmclock;
 
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -12,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,11 +22,15 @@ import android.widget.Button;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
+
+
 /**
  * Created by Jerry on 6/11/17.
  */
 
 public class TimerFragment extends Fragment {
+    public static final String TAG = TimerFragment.class.getSimpleName();
+    public static final String KEY_COUNTER_TIME = "KEY_COUNTER_TIME";
     NumberPicker hourPicker;
     NumberPicker minutePicker;
     NumberPicker secondPicker;
@@ -36,6 +43,9 @@ public class TimerFragment extends Fragment {
     TextView minuteLabel;
     TextView secondLabel;
     int countTime;
+    int hour;
+    int minute;
+    int second;
     Context context;
 
     @Nullable
@@ -72,38 +82,30 @@ public class TimerFragment extends Fragment {
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int second = secondPicker.getValue();
-                int minute = minutePicker.getValue();
-                int hour = hourPicker.getValue();
+                second = secondPicker.getValue();
+                minute = minutePicker.getValue();
+                hour = hourPicker.getValue();
                 countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
                 timer = new CountDownTimer(countTime, 1000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
-                        int hour = (int) (millisUntilFinished / 1000 / 60 / 60);
-                        int minute = (int) (millisUntilFinished / 1000 / 60 % 60);
-                        int second = (int) (millisUntilFinished / 1000 % 60);
+                        hour = (int) (millisUntilFinished / 1000 / 60 / 60);
+                        minute = (int) (millisUntilFinished / 1000 / 60 % 60);
+                        second = (int) (millisUntilFinished / 1000 % 60);
                         countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                        countTime = (int) millisUntilFinished;
                     }
 
                     @Override
                     public void onFinish() {
                         countDownTextView.setText("00 : 00 : 00");
+
                         Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
                         Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
 
                         if (ringtoneSound != null) {
                             ringtoneSound.play();
                         }
-
-                        Notification notification = new NotificationCompat.Builder(context)
-                                .setPriority(Notification.PRIORITY_MAX)
-                                .setSmallIcon(R.mipmap.ic_launcher)
-                                .setContentTitle("My notification")
-                                .setContentText("Hello World!")
-                                .setDefaults(Notification.DEFAULT_ALL)
-                                .build();
-                        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                        notificationManager.notify(1, notification);
                     }
                 };
                 timer.start();
@@ -122,5 +124,56 @@ public class TimerFragment extends Fragment {
 
 
         return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i(TAG, "On Start is called");
+        //Stop the service
+        Intent intent = new Intent(context, TimerNotificationService.class);
+        context.stopService(intent);
+        //Update counter and display the right time.
+
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.i(TAG, "On Resume is called");
+
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.i(TAG, "On Pause is called");
+    }
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i(TAG, "On Stop is called");
+        //Get time from timer
+        Intent intent = new Intent(context, TimerNotificationService.class);
+        intent.putExtra(KEY_COUNTER_TIME, countTime);
+
+        //Start the service
+        context.startService(intent);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Log.i(TAG, "On Destroy View is called");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "On Destroy is called");
     }
 }
