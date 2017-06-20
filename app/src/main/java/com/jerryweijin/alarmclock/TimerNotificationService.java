@@ -4,9 +4,12 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.CountDownTimer;
+import android.os.IBinder;
+import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -16,7 +19,7 @@ import android.util.Log;
  * Created by Jerry on 6/18/17.
  */
 
-public class TimerNotificationService extends IntentService {
+public class TimerNotificationService extends Service {
     public static final String TAG = TimerNotificationService.class.getSimpleName();
     private static final int REQUEST_CODE = 1;
     private static final int TIMER_NOTIFICATION = 2;
@@ -28,13 +31,18 @@ public class TimerNotificationService extends IntentService {
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
 
-    public TimerNotificationService() {
-        super("TimeNotificationService");
+/*
+    @Override
+    public void onCreate() {
+        TimerNotificationThread thread = new TimerNotificationThread();
+        thread.setName("TimerNotificationThread");
+        thread.start();
     }
 
+*/
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
-        Log.i(TAG, "onHandleIntent is called");
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "onStartCommand is called");
         countTime = intent.getIntExtra(TimerFragment.KEY_COUNTER_TIME, 0);
         hour = (int) (countTime / 1000 / 60 / 60);
         minute = (int) (countTime / 1000 / 60 % 60);
@@ -77,6 +85,13 @@ public class TimerNotificationService extends IntentService {
             }
         };
         timer.start();
-
+        return Service.START_STICKY;
     }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
 }
