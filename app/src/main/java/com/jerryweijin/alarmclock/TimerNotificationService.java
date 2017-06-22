@@ -30,62 +30,70 @@ public class TimerNotificationService extends Service {
     CountDownTimer timer;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
+    TimerNotificationHandler handler;
 
-/*
+
     @Override
     public void onCreate() {
         TimerNotificationThread thread = new TimerNotificationThread();
         thread.setName("TimerNotificationThread");
         thread.start();
+        while(thread.handler == null) {}
+        handler = thread.handler;
+        Log.i(TAG, "onCreate is called");
     }
 
-*/
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand is called");
-        countTime = intent.getIntExtra(TimerFragment.KEY_COUNTER_TIME, 0);
-        hour = (int) (countTime / 1000 / 60 / 60);
-        minute = (int) (countTime / 1000 / 60 % 60);
-        second = (int) (countTime / 1000 % 60);
-        Intent activityIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
+        if (intent != null) {
+            countTime = intent.getIntExtra(TimerFragment.KEY_COUNTER_TIME, 0);
 
-        builder = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Timer")
-                .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
-                .setContentIntent(pendingIntent);
+            hour = (int) (countTime / 1000 / 60 / 60);
+            minute = (int) (countTime / 1000 / 60 % 60);
+            second = (int) (countTime / 1000 % 60);
+            Intent activityIntent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
 
-        notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+            builder = new NotificationCompat.Builder(this)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Timer")
+                    .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
+                    .setContentIntent(pendingIntent);
 
-        timer = new CountDownTimer(countTime, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                hour = (int) (millisUntilFinished / 1000 / 60 / 60);
-                minute = (int) (millisUntilFinished / 1000 / 60 % 60);
-                second = (int) (millisUntilFinished / 1000 % 60);
-                builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                notificationManager.notify(TIMER_NOTIFICATION, builder.build());
-                Log.i(TAG, "onTick is called");
-            }
+            notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+            startForeground(TIMER_NOTIFICATION, builder.build());
 
-            @Override
-            public void onFinish() {
-                Intent serviceIntent = new Intent(TimerNotificationService.this, TimerNotificationService.class);
-                PendingIntent pendingIntent = PendingIntent.getActivity(TimerNotificationService.this, REQUEST_CODE, serviceIntent, 0);
-                NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.ic_action_name, "Dismiss", pendingIntent).build();
-                builder.setContentText("00 : 00 : 00")
-                        .setDefaults(Notification.DEFAULT_ALL)
-                        .addAction(action)
-                        .setPriority(Notification.PRIORITY_MAX);
+            timer = new CountDownTimer(countTime, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    hour = (int) (millisUntilFinished / 1000 / 60 / 60);
+                    minute = (int) (millisUntilFinished / 1000 / 60 % 60);
+                    second = (int) (millisUntilFinished / 1000 % 60);
 
-                notificationManager.notify(TIMER_NOTIFICATION, builder.build());
-                Log.i(TAG, "onFinished is called");
-            }
-        };
-        timer.start();
-        return Service.START_STICKY;
+                    builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+
+                    notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+                }
+
+                @Override
+                public void onFinish() {
+                    Intent serviceIntent = new Intent(TimerNotificationService.this, TimerNotificationService.class);
+                    PendingIntent pendingIntent = PendingIntent.getActivity(TimerNotificationService.this, REQUEST_CODE, serviceIntent, 0);
+                    NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.ic_action_name, "Dismiss", pendingIntent).build();
+                    builder.setContentText("00 : 00 : 00")
+                            .setDefaults(Notification.DEFAULT_ALL)
+                            .addAction(action)
+                            .setPriority(Notification.PRIORITY_MAX);
+
+                    notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+                    Log.i(TAG, "onFinished is called");
+                }
+            };
+            timer.start();
+        }
+        return Service.START_REDELIVER_INTENT;
     }
 
     @Nullable

@@ -47,6 +47,9 @@ public class TimerFragment extends Fragment {
     int minute;
     int second;
     Context context;
+    boolean isTimerSet = false;
+    NotificationCompat.Builder builder;
+    NotificationManager notificationManager;
 
     @Nullable
     @Override
@@ -82,6 +85,7 @@ public class TimerFragment extends Fragment {
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                isTimerSet = true;
                 second = secondPicker.getValue();
                 minute = minutePicker.getValue();
                 hour = hourPicker.getValue();
@@ -106,6 +110,24 @@ public class TimerFragment extends Fragment {
                         if (ringtoneSound != null) {
                             ringtoneSound.play();
                         }
+                        countDownTextView.setVisibility(View.INVISIBLE);
+                        hourPicker.setVisibility(View.VISIBLE);
+                        minutePicker.setVisibility(View.VISIBLE);
+                        secondPicker.setVisibility(View.VISIBLE);
+                        hourMinuteSeparator.setVisibility(View.VISIBLE);
+                        minuteSecondSeparator.setVisibility(View.VISIBLE);
+                        hourLabel.setVisibility(View.VISIBLE);
+                        minuteLabel.setVisibility(View.VISIBLE);
+                        secondLabel.setVisibility(View.VISIBLE);
+                        isTimerSet = false;
+                        builder = new NotificationCompat.Builder(context)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("Timer")
+                                .setContentText("Time is up")
+                                .setPriority(Notification.PRIORITY_HIGH)
+                                .setDefaults(Notification.DEFAULT_ALL);
+                        notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        notificationManager.notify(11, builder.build());
                     }
                 };
                 timer.start();
@@ -158,11 +180,13 @@ public class TimerFragment extends Fragment {
         super.onStop();
         Log.i(TAG, "On Stop is called");
         //Get time from timer
-        Intent intent = new Intent(context, TimerNotificationService.class);
-        intent.putExtra(KEY_COUNTER_TIME, countTime);
+        if (isTimerSet) {
+            Intent intent = new Intent(context, TimerNotificationService.class);
+            intent.putExtra(KEY_COUNTER_TIME, countTime);
 
-        //Start the service
-        context.startService(intent);
+            //Start the service
+            context.startService(intent);
+        }
     }
 
     @Override
