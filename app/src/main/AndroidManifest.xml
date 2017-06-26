@@ -20,6 +20,7 @@
 
         </activity>
         <service android:name=".TimerNotificationService" />
+        <service android:name=".TimerAlarmService" />
     </application>
 
 </manifest>

@@ -30,7 +30,6 @@ import android.widget.TextView;
 
 public class TimerFragment extends Fragment {
     public static final String TAG = TimerFragment.class.getSimpleName();
-    public static final String KEY_COUNTER_TIME = "KEY_COUNTER_TIME";
     NumberPicker hourPicker;
     NumberPicker minutePicker;
     NumberPicker secondPicker;
@@ -48,6 +47,7 @@ public class TimerFragment extends Fragment {
     int second;
     Context context;
     boolean isTimerSet = false;
+    boolean isTimerServiceRunning = false;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
 
@@ -93,41 +93,47 @@ public class TimerFragment extends Fragment {
                 timer = new CountDownTimer(countTime, 1000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
-                        hour = (int) (millisUntilFinished / 1000 / 60 / 60);
-                        minute = (int) (millisUntilFinished / 1000 / 60 % 60);
-                        second = (int) (millisUntilFinished / 1000 % 60);
-                        countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                        countTime = (int) millisUntilFinished;
+                        if (isTimerServiceRunning == false) {
+                            hour = (int) (millisUntilFinished / 1000 / 60 / 60);
+                            minute = (int) (millisUntilFinished / 1000 / 60 % 60);
+                            second = (int) (millisUntilFinished / 1000 % 60);
+                            countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                            countTime = (int) millisUntilFinished;
+                        }
                     }
 
                     @Override
                     public void onFinish() {
-                        countDownTextView.setText("00 : 00 : 00");
+                        if (isTimerServiceRunning == false) {
+                            countDownTextView.setText("00 : 00 : 00");
 
-                        Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                        Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
+                            Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                            Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
 
-                        if (ringtoneSound != null) {
-                            ringtoneSound.play();
+                            if (ringtoneSound != null) {
+                                ringtoneSound.play();
+                            }
+                            countDownTextView.setVisibility(View.INVISIBLE);
+                            hourPicker.setVisibility(View.VISIBLE);
+                            minutePicker.setVisibility(View.VISIBLE);
+                            secondPicker.setVisibility(View.VISIBLE);
+                            hourMinuteSeparator.setVisibility(View.VISIBLE);
+                            minuteSecondSeparator.setVisibility(View.VISIBLE);
+                            hourLabel.setVisibility(View.VISIBLE);
+                            minuteLabel.setVisibility(View.VISIBLE);
+                            secondLabel.setVisibility(View.VISIBLE);
+                            isTimerSet = false;
+
+                            builder = new NotificationCompat.Builder(context)
+                                    .setSmallIcon(R.mipmap.ic_launcher)
+                                    .setContentTitle("Timer")
+                                    .setContentText("Time is up")
+                                    .setPriority(Notification.PRIORITY_HIGH)
+                                    .setDefaults(Notification.DEFAULT_ALL);
+                            notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                            notificationManager.notify(11, builder.build());
+
                         }
-                        countDownTextView.setVisibility(View.INVISIBLE);
-                        hourPicker.setVisibility(View.VISIBLE);
-                        minutePicker.setVisibility(View.VISIBLE);
-                        secondPicker.setVisibility(View.VISIBLE);
-                        hourMinuteSeparator.setVisibility(View.VISIBLE);
-                        minuteSecondSeparator.setVisibility(View.VISIBLE);
-                        hourLabel.setVisibility(View.VISIBLE);
-                        minuteLabel.setVisibility(View.VISIBLE);
-                        secondLabel.setVisibility(View.VISIBLE);
-                        isTimerSet = false;
-                        builder = new NotificationCompat.Builder(context)
-                                .setSmallIcon(R.mipmap.ic_launcher)
-                                .setContentTitle("Timer")
-                                .setContentText("Time is up")
-                                .setPriority(Notification.PRIORITY_HIGH)
-                                .setDefaults(Notification.DEFAULT_ALL);
-                        notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                        notificationManager.notify(11, builder.build());
                     }
                 };
                 timer.start();
@@ -142,9 +148,6 @@ public class TimerFragment extends Fragment {
                 secondLabel.setVisibility(View.INVISIBLE);
             }
         });
-
-
-
         return view;
     }
 
@@ -156,7 +159,7 @@ public class TimerFragment extends Fragment {
         Intent intent = new Intent(context, TimerNotificationService.class);
         context.stopService(intent);
         //Update counter and display the right time.
-
+        isTimerServiceRunning = false;
     }
 
 
@@ -182,10 +185,10 @@ public class TimerFragment extends Fragment {
         //Get time from timer
         if (isTimerSet) {
             Intent intent = new Intent(context, TimerNotificationService.class);
-            intent.putExtra(KEY_COUNTER_TIME, countTime);
-
+            intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
             //Start the service
             context.startService(intent);
+            isTimerServiceRunning = true;
         }
     }
 
