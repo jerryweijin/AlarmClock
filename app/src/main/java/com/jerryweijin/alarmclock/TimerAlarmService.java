@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 
@@ -25,10 +24,12 @@ import java.util.TimerTask;
 
 public class TimerAlarmService extends Service {
     private static final int REQUEST_CODE = 1;
-    private static final int TIMER_ALARM_NOTIFICATION = 2;
+    private static final int HEADS_UP_NOTIFICATION = 2;
+    public static final int ALARM_SERVICE_NOTIFICATION = 3;
     public static final String ACTION_DISMISS = "com.jerryweijin.alarmclock.intent.action.dismiss";
     private Ringtone ringtoneSound;
     private NotificationCompat.Builder builder;
+    private NotificationCompat.Builder builder2;
     private NotificationManager notificationManager;
     private int countTime;
     private int hour;
@@ -49,7 +50,7 @@ public class TimerAlarmService extends Service {
             second = (int) (elaspedTime / 1000 % 60);
 
             builder.setContentText("-" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-            notificationManager.notify(TIMER_ALARM_NOTIFICATION, builder.build());
+            notificationManager.notify(HEADS_UP_NOTIFICATION, builder.build());
 
             handler.postDelayed(this, 2000);
         }
@@ -66,7 +67,7 @@ public class TimerAlarmService extends Service {
         if (action != null && action.equals(ACTION_DISMISS)) {
             ringtoneSound.stop();
             timer.cancel();
-            //notificationManager.cancel(TIMER_ALARM_NOTIFICATION);
+            //notificationManager.cancel(HEADS_UP_NOTIFICATION);
             //handler.removeCallbacks(runnable);
             stopSelf();
         } else {
@@ -99,12 +100,18 @@ public class TimerAlarmService extends Service {
                     .setVibrate(new long[0])
                     .addAction(dismissAction)
                     .addAction(restartAction)
-                    .setPriority(Notification.PRIORITY_HIGH);
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setCategory(Notification.CATEGORY_ALARM);
+
+            builder2 = new NotificationCompat.Builder(this)
+                    .setContentTitle("Timer")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setCategory(Notification.CATEGORY_SERVICE);
 
             notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-            //startForeground(TIMER_ALARM_NOTIFICATION, builder.build());
-            notificationManager.notify(TIMER_ALARM_NOTIFICATION, builder.build());
-
+            startForeground(ALARM_SERVICE_NOTIFICATION, builder2.build());
+            notificationManager.notify(HEADS_UP_NOTIFICATION, builder.build());
+/*
             timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -115,12 +122,13 @@ public class TimerAlarmService extends Service {
                     second = (int) (elaspedTime / 1000 % 60);
 
                     builder.setContentText("-" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                    notificationManager.notify(TIMER_ALARM_NOTIFICATION, builder.build());
+                    notificationManager.notify(HEADS_UP_NOTIFICATION, builder.build());
                 }
             }, 0, 1000);
-
+*/
             startTime = SystemClock.uptimeMillis();
-            //handler.postDelayed(runnable, 2000);
+            handler.postDelayed(runnable, 2000);
+
         }
         return Service.START_REDELIVER_INTENT;
     }
