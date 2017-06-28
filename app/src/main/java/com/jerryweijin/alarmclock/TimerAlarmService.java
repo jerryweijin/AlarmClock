@@ -58,17 +58,17 @@ public class TimerAlarmService extends Service {
 
     @Override
     public void onCreate() {
-        handler = new Handler();
+        //handler = new Handler();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         action = intent.getAction();
         if (action != null && action.equals(ACTION_DISMISS)) {
-            ringtoneSound.stop();
-            timer.cancel();
-            //notificationManager.cancel(HEADS_UP_NOTIFICATION);
-            //handler.removeCallbacks(runnable);
+            //ringtoneSound.stop();
+            //timer.cancel();
+            notificationManager.cancel(HEADS_UP_NOTIFICATION);
+            handler.removeCallbacks(runnable);
             stopSelf();
         } else {
             countTime = intent.getIntExtra(TimerNotificationService.KEY_COUNT_TIME, 0);
@@ -77,21 +77,23 @@ public class TimerAlarmService extends Service {
             PendingIntent pendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
 
             Intent dismissIntent = new Intent(this, TimerAlarmService.class);
+            //Intent dismissIntent = new Intent(this, MainActivity.class);
             dismissIntent.setAction(ACTION_DISMISS);
             PendingIntent dismissPendingIntent = PendingIntent.getService(this, REQUEST_CODE, dismissIntent, 0);
+            //PendingIntent dismissPendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, dismissIntent, 0);
             NotificationCompat.Action dismissAction = new NotificationCompat.Action.Builder(R.drawable.ic_dismiss, "Dismiss", dismissPendingIntent).build();
 
             Intent restartIntent = new Intent(this, TimerNotificationService.class);
             restartIntent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
             PendingIntent restartPendingIntent = PendingIntent.getService(this, REQUEST_CODE, restartIntent, 0);
             NotificationCompat.Action restartAction = new NotificationCompat.Action.Builder(R.drawable.ic_restart, "Restart", restartPendingIntent).build();
-
+/*
             Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             ringtoneSound = RingtoneManager.getRingtone(this, ringtoneUri);
             if (ringtoneSound != null) {
                 ringtoneSound.play();
             }
-
+*/
             builder = new NotificationCompat.Builder(this)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle("Timer is up")
@@ -101,7 +103,8 @@ public class TimerAlarmService extends Service {
                     .addAction(dismissAction)
                     .addAction(restartAction)
                     .setPriority(Notification.PRIORITY_HIGH)
-                    .setCategory(Notification.CATEGORY_ALARM);
+                    .setCategory(Notification.CATEGORY_ALARM)
+                    .setAutoCancel(true);
 
             builder2 = new NotificationCompat.Builder(this)
                     .setContentTitle("Timer")
