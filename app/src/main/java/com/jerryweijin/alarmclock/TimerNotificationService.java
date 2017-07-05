@@ -17,6 +17,9 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 
 /**
  * Created by Jerry on 6/18/17.
@@ -71,9 +74,11 @@ public class TimerNotificationService extends Service {
                 .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
                 .setContentIntent(pendingIntent);
 
-        notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        startForeground(TIMER_NOTIFICATION, builder.build());
+        //notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        //startForeground(TIMER_NOTIFICATION, builder.build());
+        //notificationManager.notify(TIMER_NOTIFICATION, builder.build());
 
+        //final DateFormat formatter = DateFormat.getTimeInstance();
         timer = new CountDownTimer(countTime, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -81,8 +86,11 @@ public class TimerNotificationService extends Service {
                 minute = (int) (millisUntilFinished / 1000 / 60 % 60);
                 second = (int) (millisUntilFinished / 1000 % 60);
 
-                builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+                //builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                //notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+                //Date now = new Date();
+                //Log.i(TAG, formatter.format(now));
+                Log.i(TAG, "" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
             }
 
             @Override

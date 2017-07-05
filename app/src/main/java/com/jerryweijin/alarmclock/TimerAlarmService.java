@@ -17,11 +17,15 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.widget.Chronometer;
 import android.widget.RemoteViews;
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+
 
 /**
  * Created by Jerry on 6/25/17.
@@ -30,9 +34,9 @@ import java.util.TimerTask;
 public class TimerAlarmService extends Service {
     private static final int REQUEST_CODE = 1;
     private static final int HEADS_UP_NOTIFICATION = 2;
-    public static final int ALARM_SERVICE_NOTIFICATION = 3;
-    public static final String ACTION_DISMISS = "com.jerryweijin.alarmclock.intent.action.dismiss";
+    private static final String ACTION_DISMISS = "com.jerryweijin.alarmclock.intent.action.dismiss";
     private static final String ACTION_RESTART = "com.jerryweijin.alarmclock.intent.action.restart";
+    public static final String TAG = TimerAlarmService.class.getSimpleName();
     private Ringtone ringtoneSound;
     private NotificationCompat.Builder builder;
     private NotificationCompat.Builder builder2;
@@ -80,9 +84,6 @@ public class TimerAlarmService extends Service {
 
     @Override
     public void onCreate() {
-        //TimerNotificationThread thread = new TimerNotificationThread();
-        //while (thread.handler == null) {}
-        //handler = thread.handler;
         //handler = new Handler();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DISMISS);
@@ -94,7 +95,7 @@ public class TimerAlarmService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         countTime = intent.getIntExtra(TimerNotificationService.KEY_COUNT_TIME, 0);
 
-        Intent activityIntent = new Intent(this, MainActivity.class);
+        Intent activityIntent = new Intent(this, TimerActivity.class);
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
 
         Intent dismissIntent = new Intent(ACTION_DISMISS);
@@ -111,11 +112,7 @@ public class TimerAlarmService extends Service {
         if (ringtoneSound != null) {
             ringtoneSound.play();
         }
-/*
-        Chronometer chronometer = new Chronometer(this);
-        chronometer.setOnChronometerTickListener(this);
-        chronometer.start();
-*/
+
         remoteViews = new RemoteViews(getPackageName(), R.layout.custom_heads_up_notification);
         remoteViews.setImageViewResource(R.id.notificationIcon, R.mipmap.ic_launcher);
         remoteViews.setTextViewText(R.id.contentTitle, "Time's up");
@@ -154,7 +151,18 @@ public class TimerAlarmService extends Service {
         startForeground(HEADS_UP_NOTIFICATION, builder.build());
         //startTime = SystemClock.uptimeMillis();
         //handler.postDelayed(runnable, 1000);
-
+/*
+        final DateFormat formatter = DateFormat.getTimeInstance();
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Date date = new Date();
+                Log.i(TAG, formatter.format(date));
+            }
+        };
+        timer.schedule(task, 0, 60000);
+*/
         return Service.START_REDELIVER_INTENT;
     }
 
@@ -163,16 +171,4 @@ public class TimerAlarmService extends Service {
     public IBinder onBind(Intent intent) {
         return null;
     }
-/*
-    @Override
-    public void onChronometerTick(Chronometer chronometer) {
-        elaspedTime = SystemClock.uptimeMillis() - startTime;
-        hour = (int) (elaspedTime / 1000 / 60 / 60);
-        minute = (int) (elaspedTime / 1000 / 60 % 60);
-        second = (int) (elaspedTime / 1000 % 60);
-
-        chronometer.setText("-" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-    }
-
-    */
 }
