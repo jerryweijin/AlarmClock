@@ -17,6 +17,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Chronometer;
 import android.widget.RemoteViews;
@@ -34,8 +35,8 @@ import java.util.TimerTask;
 public class TimerAlarmService extends Service {
     private static final int REQUEST_CODE = 1;
     private static final int HEADS_UP_NOTIFICATION = 2;
-    private static final String ACTION_DISMISS = "com.jerryweijin.alarmclock.intent.action.dismiss";
-    private static final String ACTION_RESTART = "com.jerryweijin.alarmclock.intent.action.restart";
+    public static final String ACTION_DISMISS = "com.jerryweijin.alarmclock.intent.action.dismiss";
+    public static final String ACTION_RESTART = "com.jerryweijin.alarmclock.intent.action.restart";
     public static final String TAG = TimerAlarmService.class.getSimpleName();
     private Ringtone ringtoneSound;
     private NotificationCompat.Builder builder;
@@ -49,6 +50,7 @@ public class TimerAlarmService extends Service {
     private Handler handler;
     private long elaspedTime;
     private RemoteViews remoteViews;
+
 /*
     private Runnable runnable = new Runnable() {
         @Override
@@ -78,7 +80,7 @@ public class TimerAlarmService extends Service {
                 startService(serviceIntent);
             }
             stopSelf();
-
+            Log.i(TAG, "onReceive is called");
         }
     };
 
@@ -89,6 +91,7 @@ public class TimerAlarmService extends Service {
         intentFilter.addAction(ACTION_DISMISS);
         intentFilter.addAction(ACTION_RESTART);
         registerReceiver(receiver, intentFilter);
+        Log.i(TAG, "registerReceiver is called");
     }
 
     @Override
@@ -116,7 +119,6 @@ public class TimerAlarmService extends Service {
         remoteViews = new RemoteViews(getPackageName(), R.layout.custom_heads_up_notification);
         remoteViews.setImageViewResource(R.id.notificationIcon, R.mipmap.ic_launcher);
         remoteViews.setTextViewText(R.id.contentTitle, "Time's up");
-        //startTime = SystemClock.uptimeMillis();
         startTime = SystemClock.elapsedRealtime();
         remoteViews.setChronometer(R.id.contentText, startTime, "-%s", true);
         remoteViews.setOnClickPendingIntent(R.id.dismissButton, dismissPendingIntent);
@@ -153,7 +155,7 @@ public class TimerAlarmService extends Service {
         //handler.postDelayed(runnable, 1000);
 /*
         final DateFormat formatter = DateFormat.getTimeInstance();
-        Timer timer = new Timer();
+        Timer countDownTimer = new Timer();
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -161,7 +163,7 @@ public class TimerAlarmService extends Service {
                 Log.i(TAG, formatter.format(date));
             }
         };
-        timer.schedule(task, 0, 60000);
+        countDownTimer.schedule(task, 0, 60000);
 */
         return Service.START_REDELIVER_INTENT;
     }

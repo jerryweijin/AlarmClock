@@ -4,18 +4,22 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -37,10 +41,23 @@ public class TimerNotificationService extends Service {
     CountDownTimer timer;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
-    private long elaspedTime;
+    //private long elaspedTime;
     Handler handler;
-    Ringtone ringtoneSound;
-
+    //Ringtone ringtoneSound;
+    //PowerManager powerManager;
+    //PowerManager.WakeLock wakeLock;
+    boolean isScreenOff = false;
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(Intent.ACTION_SCREEN_OFF)) {
+                isScreenOff = true;
+            } else if (action.equals(Intent.ACTION_SCREEN_ON)) {
+                isScreenOff = false;
+            }
+        }
+    };
 
 
     @Override
@@ -54,12 +71,19 @@ public class TimerNotificationService extends Service {
         Log.i(TAG, "onCreate is called");
         */
         handler = new Handler();
+        //powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        //wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "MyWakeLock");
+        //wakeLock.acquire();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+        registerReceiver(receiver, intentFilter);
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand is called");
+        //Log.i(TAG, "onStartCommand is called");
         countTime = intent.getIntExtra(KEY_COUNT_TIME, 0);
 
         hour = (int) (countTime / 1000 / 60 / 60);
@@ -74,8 +98,8 @@ public class TimerNotificationService extends Service {
                 .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
                 .setContentIntent(pendingIntent);
 
-        //notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        //startForeground(TIMER_NOTIFICATION, builder.build());
+        notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        startForeground(TIMER_NOTIFICATION, builder.build());
         //notificationManager.notify(TIMER_NOTIFICATION, builder.build());
 
         //final DateFormat formatter = DateFormat.getTimeInstance();
@@ -86,11 +110,11 @@ public class TimerNotificationService extends Service {
                 minute = (int) (millisUntilFinished / 1000 / 60 % 60);
                 second = (int) (millisUntilFinished / 1000 % 60);
 
-                //builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                //notificationManager.notify(TIMER_NOTIFICATION, builder.build());
+                builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                notificationManager.notify(TIMER_NOTIFICATION, builder.build());
                 //Date now = new Date();
                 //Log.i(TAG, formatter.format(now));
-                Log.i(TAG, "" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                Log.i(TAG, "" + SystemClock.uptimeMillis());
             }
 
             @Override
@@ -98,8 +122,15 @@ public class TimerNotificationService extends Service {
                 Intent serviceIntent = new Intent(TimerNotificationService.this, TimerAlarmService.class);
                 serviceIntent.putExtra(KEY_COUNT_TIME, countTime);
                 startService(serviceIntent);
+                if (isScreenOff) {
+                    Intent activityIntent = new Intent(TimerNotificationService.this, TimerActivity.class);
+                    startActivity(activityIntent);
+                }
+                unregisterReceiver(receiver);
                 stopSelf();
+                //wakeLock.release();
                 Log.i(TAG, "onFinished is called");
+                Log.i(TAG, "isScreenOff =" + isScreenOff);
             }
         };
         timer.start();
@@ -116,6 +147,6 @@ public class TimerNotificationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.i(TAG, "onDestroy is called");
+        //Log.i(TAG, "onDestroy is called");
     }
 }

@@ -2,7 +2,6 @@ package com.jerryweijin.alarmclock;
 
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.Ringtone;
@@ -13,7 +12,6 @@ import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -35,7 +33,7 @@ public class TimerFragment extends Fragment {
     NumberPicker secondPicker;
     Button startButton;
     TextView countDownTextView;
-    CountDownTimer timer;
+    CountDownTimer countDownTimer;
     TextView hourMinuteSeparator;
     TextView minuteSecondSeparator;
     TextView hourLabel;
@@ -47,7 +45,6 @@ public class TimerFragment extends Fragment {
     int second;
     Context context;
     boolean isTimerSet = false;
-    boolean isTimerServiceRunning = false;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
 
@@ -67,6 +64,65 @@ public class TimerFragment extends Fragment {
         secondLabel = (TextView) view.findViewById(R.id.secondLabel);
         context = getContext();
 
+        configurePickers();
+
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isTimerSet = true;
+                second = secondPicker.getValue();
+                minute = minutePicker.getValue();
+                hour = hourPicker.getValue();
+                countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
+                startCountDownTimer();
+                displayCountDown();
+            }
+        });
+        return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i(TAG, "On Start is called");
+        //Bind to the service
+
+        //Stop the service
+        Intent intent = new Intent(context, TimerNotificationService.class);
+        context.stopService(intent);
+        //Update counter and display the right time.
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        //Log.i(TAG, "On Resume is called");
+
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        //Log.i(TAG, "On Pause is called");
+        //Get time from countDownTimer
+        if (isTimerSet) {
+            stopCountDownTimer();
+            Intent intent = new Intent(context, TimerNotificationService.class);
+            intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+            //Start the service
+            context.startService(intent);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        //Log.i(TAG, "On Stop is called");
+    }
+
+    private void configurePickers() {
         String[] hours = new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"};
         hourPicker.setMinValue(0);
         hourPicker.setMaxValue(hours.length-1);
@@ -81,126 +137,74 @@ public class TimerFragment extends Fragment {
         secondPicker.setMinValue(0);
         secondPicker.setMaxValue(seconds.length-1);
         secondPicker.setDisplayedValues(seconds);
+    }
 
-        startButton.setOnClickListener(new View.OnClickListener() {
+    private void startCountDownTimer() {
+        countDownTimer = new CountDownTimer(countTime, 1000) {
             @Override
-            public void onClick(View v) {
-                isTimerSet = true;
-                second = secondPicker.getValue();
-                minute = minutePicker.getValue();
-                hour = hourPicker.getValue();
-                countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
-                timer = new CountDownTimer(countTime, 1000) {
-                    @Override
-                    public void onTick(long millisUntilFinished) {
-                        if (isTimerServiceRunning == false) {
-                            hour = (int) (millisUntilFinished / 1000 / 60 / 60);
-                            minute = (int) (millisUntilFinished / 1000 / 60 % 60);
-                            second = (int) (millisUntilFinished / 1000 % 60);
-                            countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
-                            countTime = (int) millisUntilFinished;
-                        }
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        if (isTimerServiceRunning == false) {
-                            countDownTextView.setText("00 : 00 : 00");
-
-                            Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                            Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
-
-                            if (ringtoneSound != null) {
-                                ringtoneSound.play();
-                            }
-                            countDownTextView.setVisibility(View.INVISIBLE);
-                            hourPicker.setVisibility(View.VISIBLE);
-                            minutePicker.setVisibility(View.VISIBLE);
-                            secondPicker.setVisibility(View.VISIBLE);
-                            hourMinuteSeparator.setVisibility(View.VISIBLE);
-                            minuteSecondSeparator.setVisibility(View.VISIBLE);
-                            hourLabel.setVisibility(View.VISIBLE);
-                            minuteLabel.setVisibility(View.VISIBLE);
-                            secondLabel.setVisibility(View.VISIBLE);
-                            isTimerSet = false;
-
-                            builder = new NotificationCompat.Builder(context)
-                                    .setSmallIcon(R.mipmap.ic_launcher)
-                                    .setContentTitle("Timer")
-                                    .setContentText("Time is up")
-                                    .setPriority(Notification.PRIORITY_HIGH)
-                                    .setDefaults(Notification.DEFAULT_ALL);
-                            notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                            notificationManager.notify(11, builder.build());
-
-                        }
-                    }
-                };
-                timer.start();
-                countDownTextView.setVisibility(View.VISIBLE);
-                hourPicker.setVisibility(View.INVISIBLE);
-                minutePicker.setVisibility(View.INVISIBLE);
-                secondPicker.setVisibility(View.INVISIBLE);
-                hourMinuteSeparator.setVisibility(View.INVISIBLE);
-                minuteSecondSeparator.setVisibility(View.INVISIBLE);
-                hourLabel.setVisibility(View.INVISIBLE);
-                minuteLabel.setVisibility(View.INVISIBLE);
-                secondLabel.setVisibility(View.INVISIBLE);
+            public void onTick(long millisUntilFinished) {
+                hour = (int) (millisUntilFinished / 1000 / 60 / 60);
+                minute = (int) (millisUntilFinished / 1000 / 60 % 60);
+                second = (int) (millisUntilFinished / 1000 % 60);
+                countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                countTime = (int) millisUntilFinished;
             }
-        });
-        return view;
+
+            @Override
+            public void onFinish() {
+                soundRingTone();
+                hideCountDown();
+                isTimerSet = false;
+
+                builder = new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle("Timer")
+                        .setContentText("Time is up")
+                        .setPriority(Notification.PRIORITY_HIGH)
+                        .setDefaults(Notification.DEFAULT_ALL);
+                notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                notificationManager.notify(11, builder.build());
+            }
+        };
+        countDownTimer.start();
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        Log.i(TAG, "On Start is called");
-        //Stop the service
-        Intent intent = new Intent(context, TimerNotificationService.class);
-        context.stopService(intent);
-        //Update counter and display the right time.
-        isTimerServiceRunning = false;
+    private void stopCountDownTimer() {
+        countDownTimer.cancel();
     }
 
+    private void soundRingTone() {
+        Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        Ringtone ringtoneSound = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        Log.i(TAG, "On Resume is called");
-
-
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Log.i(TAG, "On Pause is called");
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        Log.i(TAG, "On Stop is called");
-        //Get time from timer
-        if (isTimerSet) {
-            Intent intent = new Intent(context, TimerNotificationService.class);
-            intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
-            //Start the service
-            context.startService(intent);
-            isTimerServiceRunning = true;
+        if (ringtoneSound != null) {
+            ringtoneSound.play();
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        Log.i(TAG, "On Destroy View is called");
+    private void hideCountDown() {
+        countDownTextView.setVisibility(View.INVISIBLE);
+        hourPicker.setVisibility(View.VISIBLE);
+        minutePicker.setVisibility(View.VISIBLE);
+        secondPicker.setVisibility(View.VISIBLE);
+        hourMinuteSeparator.setVisibility(View.VISIBLE);
+        minuteSecondSeparator.setVisibility(View.VISIBLE);
+        hourLabel.setVisibility(View.VISIBLE);
+        minuteLabel.setVisibility(View.VISIBLE);
+        secondLabel.setVisibility(View.VISIBLE);
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.i(TAG, "On Destroy is called");
+    private void displayCountDown() {
+        countDownTextView.setText("00 : 00 : 00");
+        countDownTextView.setVisibility(View.VISIBLE);
+        hourPicker.setVisibility(View.INVISIBLE);
+        minutePicker.setVisibility(View.INVISIBLE);
+        secondPicker.setVisibility(View.INVISIBLE);
+        hourMinuteSeparator.setVisibility(View.INVISIBLE);
+        minuteSecondSeparator.setVisibility(View.INVISIBLE);
+        hourLabel.setVisibility(View.INVISIBLE);
+        minuteLabel.setVisibility(View.INVISIBLE);
+        secondLabel.setVisibility(View.INVISIBLE);
     }
+
 }
