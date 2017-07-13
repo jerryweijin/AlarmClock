@@ -2,13 +2,17 @@ package com.jerryweijin.alarmclock;
 
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NotificationCompat;
@@ -28,6 +32,7 @@ import android.widget.TextView;
 
 public class TimerFragment extends Fragment {
     public static final String TAG = TimerFragment.class.getSimpleName();
+    public static final String KEY_COUNT_TIME = "KEY_COUNT_TIME";
     NumberPicker hourPicker;
     NumberPicker minutePicker;
     NumberPicker secondPicker;
@@ -45,8 +50,29 @@ public class TimerFragment extends Fragment {
     int second;
     Context context;
     boolean isTimerSet = false;
+    boolean isBound = false;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
+    private TimerNotificationService timerNotificationService;
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            TimerNotificationService.LocalBinder localBinder = (TimerNotificationService.LocalBinder) service;
+            timerNotificationService = localBinder.getService();
+            countTime = timerNotificationService.countTime;
+            if (countTime != 0) {
+                isTimerSet = true;
+                startCountDownTimer();
+                displayCountDown();
+            }
+            Log.i(TAG, "onServiceConnected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     @Nullable
     @Override
@@ -76,6 +102,9 @@ public class TimerFragment extends Fragment {
                 countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
                 startCountDownTimer();
                 displayCountDown();
+                Intent intent = new Intent(context, TimerNotificationService.class);
+                intent.putExtra(KEY_COUNT_TIME, countTime);
+                context.startService(intent);
             }
         });
         return view;
@@ -84,13 +113,12 @@ public class TimerFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        Log.i(TAG, "On Start is called");
+        Log.i(TAG, "Fragment onStart is called");
         //Bind to the service
-
-        //Stop the service
         Intent intent = new Intent(context, TimerNotificationService.class);
-        context.stopService(intent);
-        //Update counter and display the right time.
+        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        timerNotificationService.stopForeground(true);
+        timerNotificationService.isServiceForground = false;
     }
 
 
@@ -106,20 +134,19 @@ public class TimerFragment extends Fragment {
     public void onPause() {
         super.onPause();
         //Log.i(TAG, "On Pause is called");
-        //Get time from countDownTimer
-        if (isTimerSet) {
-            stopCountDownTimer();
-            Intent intent = new Intent(context, TimerNotificationService.class);
-            intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
-            //Start the service
-            context.startService(intent);
-        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        //Log.i(TAG, "On Stop is called");
+        Log.i(TAG, "On Stop is called");
+        //Get time from countDownTimer
+        if (isTimerSet) {
+            stopCountDownTimer();
+            context.unbindService(serviceConnection);
+            timerNotificationService.createNotification();
+            timerNotificationService.isServiceForground = true;
+        }
     }
 
     private void configurePickers() {
