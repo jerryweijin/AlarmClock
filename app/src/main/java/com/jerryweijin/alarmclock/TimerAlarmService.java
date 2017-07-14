@@ -54,13 +54,12 @@ public class TimerAlarmService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             ringtoneSound.stop();
-            //handler.removeCallbacks(runnable);
             notificationManager.cancel(HEADS_UP_NOTIFICATION);
-            unregisterReceiver(receiver);
             if (intent.getAction().equals(ACTION_RESTART)) {
                 Intent serviceIntent = new Intent(TimerAlarmService.this, TimerNotificationService.class);
                 serviceIntent.putExtra(TimerFragment.KEY_COUNT_TIME, countTime);
                 startService(serviceIntent);
+
             }
             stopSelf();
         }
@@ -124,5 +123,10 @@ public class TimerAlarmService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(receiver);
     }
 }

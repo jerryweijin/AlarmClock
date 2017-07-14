@@ -23,7 +23,7 @@ public class TimerNotificationService extends Service {
     public static final String TAG = TimerNotificationService.class.getSimpleName();
     private static final int REQUEST_CODE = 1;
     public static final int TIMER_NOTIFICATION = 2;
-    int countTime = 0;
+    int countTime, remainTime;
     int hour;
     int minute;
     int second;
@@ -74,7 +74,7 @@ public class TimerNotificationService extends Service {
                     builder.setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
                     notificationManager.notify(TIMER_NOTIFICATION, builder.build());
                 }
-                countTime = (int) millisUntilFinished;
+                remainTime = (int) millisUntilFinished;
                 //Log.i(TAG, "" + SystemClock.uptimeMillis());
             }
 
@@ -113,7 +113,7 @@ public class TimerNotificationService extends Service {
     public void onDestroy() {
         super.onDestroy();
         unregisterReceiver(receiver);
-        Log.i(TAG, "Service onDestroy is called");
+        //Log.i(TAG, "Service onDestroy is called");
     }
 
     public void createNotification() {
