@@ -34,9 +34,6 @@ public class TimerActivity extends AppCompatActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        //PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "MyWakeLock");
-        //wakeLock.acquire();
 
         elapsedTimeTextView = (TextView) findViewById(R.id.elapsedTimeTextView);
         restartButton = (Button) findViewById(R.id.restartButton);

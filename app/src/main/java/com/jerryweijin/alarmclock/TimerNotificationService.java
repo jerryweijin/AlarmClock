@@ -21,6 +21,8 @@ import android.util.Log;
 
 public class TimerNotificationService extends Service {
     public static final String TAG = TimerNotificationService.class.getSimpleName();
+    public static final String KEY_COUNT_TIME = "KEY_COUNT_TIME";
+    private boolean isServiceForeground = true;
     private static final int REQUEST_CODE = 1;
     public static final int TIMER_NOTIFICATION = 2;
     int countTime, remainTime;
@@ -30,35 +32,30 @@ public class TimerNotificationService extends Service {
     CountDownTimer timer;
     NotificationCompat.Builder builder;
     NotificationManager notificationManager;
-    boolean isScreenOff = false;
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (action.equals(Intent.ACTION_SCREEN_OFF)) {
-                isScreenOff = true;
-            } else if (action.equals(Intent.ACTION_SCREEN_ON)) {
-                isScreenOff = false;
-            }
-        }
-    };
     private TimerNotificationService.LocalBinder localBinder = new LocalBinder();
-    public boolean isServiceForground = false;
 
     @Override
     public void onCreate() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
         intentFilter.addAction(Intent.ACTION_SCREEN_ON);
-        registerReceiver(receiver, intentFilter);
+        Intent activityIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
+
+        builder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("Timer")
+                .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
+                .setContentIntent(pendingIntent);
+        notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        Log.i(TAG, "onCreate is called");
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         //Log.i(TAG, "onStartCommand is called");
-        countTime = intent.getIntExtra(TimerFragment.KEY_COUNT_TIME, 0);
-
+        countTime = intent.getIntExtra(KEY_COUNT_TIME, 0);
         hour = (int) (countTime / 1000 / 60 / 60);
         minute = (int) (countTime / 1000 / 60 % 60);
         second = (int) (countTime / 1000 % 60);
@@ -66,7 +63,7 @@ public class TimerNotificationService extends Service {
         timer = new CountDownTimer(countTime, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                if (isServiceForground) {
+                if (isServiceForeground) {
                     hour = (int) (millisUntilFinished / 1000 / 60 / 60);
                     minute = (int) (millisUntilFinished / 1000 / 60 % 60);
                     second = (int) (millisUntilFinished / 1000 % 60);
@@ -81,12 +78,8 @@ public class TimerNotificationService extends Service {
             @Override
             public void onFinish() {
                 Intent serviceIntent = new Intent(TimerNotificationService.this, TimerAlarmService.class);
-                serviceIntent.putExtra(TimerFragment.KEY_COUNT_TIME, countTime);
+                serviceIntent.putExtra(KEY_COUNT_TIME, countTime);
                 startService(serviceIntent);
-                if (isScreenOff) {
-                    Intent activityIntent = new Intent(TimerNotificationService.this, TimerActivity.class);
-                    startActivity(activityIntent);
-                }
                 stopSelf();
                 //Log.i(TAG, "onFinished is called");
                 //Log.i(TAG, "isScreenOff =" + isScreenOff);
@@ -94,6 +87,9 @@ public class TimerNotificationService extends Service {
         };
         timer.start();
 
+        if (isServiceForeground) {
+            startForeground(TIMER_NOTIFICATION, builder.build());
+        }
         return Service.START_REDELIVER_INTENT;
     }
 
@@ -106,28 +102,30 @@ public class TimerNotificationService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        stopForeground(true);
+        isServiceForeground = false;
+        Log.i(TAG, "onBind is called");
         return localBinder;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        stopForeground(true);
+        isServiceForeground = false;
+        Log.i(TAG, "onRebind is called");
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        startForeground(TIMER_NOTIFICATION, builder.build());
+        isServiceForeground = true;
+        Log.i(TAG, "onUnbind is called");
+        return true;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(receiver);
         //Log.i(TAG, "Service onDestroy is called");
     }
-
-    public void createNotification() {
-        Intent activityIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
-
-        builder = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Timer")
-                .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
-                .setContentIntent(pendingIntent);
-
-        notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        startForeground(TIMER_NOTIFICATION, builder.build());
-    }
-
 }

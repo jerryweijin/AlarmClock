@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -26,14 +27,12 @@ import android.widget.TextView;
 
 public class TimerFragment extends Fragment {
     public static final String TAG = TimerFragment.class.getSimpleName();
-    public static final String KEY_COUNT_TIME = "KEY_COUNT_TIME";
     private NumberPicker hourPicker, minutePicker, secondPicker;
     private Button startButton;
     private TextView countDownTextView, hourMinuteSeparator, minuteSecondSeparator, hourLabel, minuteLabel, secondLabel;
     private CountDownTimer countDownTimer;
     private int countTime, hour, minute, second;
     private Context context;
-    boolean isTimerSet = false;
     private TimerNotificationService timerNotificationService;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -41,12 +40,11 @@ public class TimerFragment extends Fragment {
             TimerNotificationService.LocalBinder localBinder = (TimerNotificationService.LocalBinder) service;
             timerNotificationService = localBinder.getService();
             int remainTime = timerNotificationService.remainTime;
-            timerNotificationService.stopForeground(true);
-            timerNotificationService.isServiceForground = false;
             if (remainTime != 0) {
-                isTimerSet = true;
                 startCountDownTimer(remainTime);
                 displayCountDown();
+            } else {
+                hideCountDown();
             }
             Log.i(TAG, "onServiceConnected");
         }
@@ -59,7 +57,6 @@ public class TimerFragment extends Fragment {
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            isTimerSet = true;
             startCountDownTimer(countTime);
             displayCountDown();
         }
@@ -86,7 +83,6 @@ public class TimerFragment extends Fragment {
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isTimerSet = true;
                 second = secondPicker.getValue();
                 minute = minutePicker.getValue();
                 hour = hourPicker.getValue();
@@ -94,12 +90,14 @@ public class TimerFragment extends Fragment {
                 startCountDownTimer(countTime);
                 displayCountDown();
                 Intent intent = new Intent(context, TimerNotificationService.class);
-                intent.putExtra(KEY_COUNT_TIME, countTime);
+                intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
                 context.startService(intent);
             }
         });
 
-        context.registerReceiver(receiver);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(TimerAlarmService.ACTION_RESTART);
+        context.registerReceiver(receiver, intentFilter);
         return view;
     }
 
@@ -109,7 +107,7 @@ public class TimerFragment extends Fragment {
         //Log.i(TAG, "Fragment onStart is called");
         //Bind to the service
         Intent intent = new Intent(context, TimerNotificationService.class);
-        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE | Context.BIND_ADJUST_WITH_ACTIVITY);
     }
 
 
@@ -117,8 +115,6 @@ public class TimerFragment extends Fragment {
     public void onResume() {
         super.onResume();
         //Log.i(TAG, "On Resume is called");
-
-
     }
 
     @Override
@@ -132,12 +128,14 @@ public class TimerFragment extends Fragment {
         super.onStop();
         //Log.i(TAG, "On Stop is called");
         //Get time from countDownTimer
-        if (isTimerSet) {
-            stopCountDownTimer();
-            context.unbindService(serviceConnection);
-            timerNotificationService.createNotification();
-            timerNotificationService.isServiceForground = true;
-        }
+        stopCountDownTimer();
+        context.unbindService(serviceConnection);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        context.unregisterReceiver(receiver);
     }
 
     private void configurePickers() {
@@ -170,14 +168,15 @@ public class TimerFragment extends Fragment {
             @Override
             public void onFinish() {
                 hideCountDown();
-                isTimerSet = false;
             }
         };
         countDownTimer.start();
     }
 
     private void stopCountDownTimer() {
-        countDownTimer.cancel();
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
+        }
     }
 
     private void hideCountDown() {

@@ -57,9 +57,8 @@ public class TimerAlarmService extends Service {
             notificationManager.cancel(HEADS_UP_NOTIFICATION);
             if (intent.getAction().equals(ACTION_RESTART)) {
                 Intent serviceIntent = new Intent(TimerAlarmService.this, TimerNotificationService.class);
-                serviceIntent.putExtra(TimerFragment.KEY_COUNT_TIME, countTime);
+                serviceIntent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
                 startService(serviceIntent);
-
             }
             stopSelf();
         }
@@ -75,7 +74,7 @@ public class TimerAlarmService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        countTime = intent.getIntExtra(TimerFragment.KEY_COUNT_TIME, 0);
+        countTime = intent.getIntExtra(TimerNotificationService.KEY_COUNT_TIME, 0);
 
         Intent activityIntent = new Intent(this, TimerActivity.class);
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);
