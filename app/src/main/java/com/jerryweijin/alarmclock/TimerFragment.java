@@ -28,10 +28,10 @@ import android.widget.TextView;
 public class TimerFragment extends Fragment {
     public static final String TAG = TimerFragment.class.getSimpleName();
     private NumberPicker hourPicker, minutePicker, secondPicker;
-    private Button startButton;
+    private Button startButton, pauseButton, cancelButton;
     private TextView countDownTextView, hourMinuteSeparator, minuteSecondSeparator, hourLabel, minuteLabel, secondLabel;
     private CountDownTimer countDownTimer;
-    private int countTime, hour, minute, second;
+    private int countTime, hour, minute, second, remainingTime;
     private Context context;
     private TimerNotificationService timerNotificationService;
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -70,6 +70,8 @@ public class TimerFragment extends Fragment {
         minutePicker = (NumberPicker) view.findViewById(R.id.minute);
         secondPicker = (NumberPicker) view.findViewById(R.id.second);
         startButton = (Button) view.findViewById(R.id.startButton);
+        pauseButton = (Button) view.findViewById(R.id.pauseButton);
+        cancelButton = (Button) view.findViewById(R.id.cancelButton);
         countDownTextView = (TextView) view.findViewById(R.id.countDownTextView);
         hourMinuteSeparator = (TextView) view.findViewById(R.id.hourMinuteSeparator);
         minuteSecondSeparator = (TextView) view.findViewById(R.id.minuteSecondSeparator);
@@ -87,11 +89,45 @@ public class TimerFragment extends Fragment {
                 minute = minutePicker.getValue();
                 hour = hourPicker.getValue();
                 countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
-                startCountDownTimer(countTime);
-                displayCountDown();
-                Intent intent = new Intent(context, TimerNotificationService.class);
-                intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
-                context.startService(intent);
+                if (countTime != 0) {
+                    startCountDownTimer(countTime);
+                    displayCountDown();
+                    Intent intent = new Intent(context, TimerNotificationService.class);
+                    intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+                    context.startService(intent);
+                    startButton.setVisibility(View.INVISIBLE);
+                    pauseButton.setVisibility(View.VISIBLE);
+                    cancelButton.setVisibility(View.VISIBLE);;
+                }
+            }
+        });
+
+        pauseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String buttonText = (String) pauseButton.getText();
+                if (buttonText.equals("PAUSE")) {
+                    startButton.setVisibility(View.INVISIBLE);
+                    pauseButton.setText("RESUME");
+                    stopCountDownTimer();
+                    timerNotificationService.stopTimer();
+                } else {
+                    pauseButton.setText("PAUSE");
+                    startCountDownTimer(remainingTime);
+                    timerNotificationService.startTimer(remainingTime);
+                }
+
+            }
+        });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startButton.setVisibility(View.VISIBLE);
+                pauseButton.setVisibility(View.INVISIBLE);
+                cancelButton.setVisibility(View.INVISIBLE);
+                stopCountDownTimer();
+                hideCountDown();
             }
         });
 
@@ -163,11 +199,15 @@ public class TimerFragment extends Fragment {
                 minute = (int) (millisUntilFinished / 1000 / 60 % 60);
                 second = (int) (millisUntilFinished / 1000 % 60);
                 countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                remainingTime = (int) millisUntilFinished;
             }
 
             @Override
             public void onFinish() {
                 hideCountDown();
+                startButton.setVisibility(View.VISIBLE);
+                pauseButton.setVisibility(View.INVISIBLE);
+                cancelButton.setVisibility(View.INVISIBLE);
             }
         };
         countDownTimer.start();

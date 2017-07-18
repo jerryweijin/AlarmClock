@@ -21,6 +21,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Chronometer;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -59,6 +60,10 @@ public class TimerAlarmService extends Service {
                 Intent serviceIntent = new Intent(TimerAlarmService.this, TimerNotificationService.class);
                 serviceIntent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
                 startService(serviceIntent);
+                hour = (countTime / 1000 / 60 / 60);
+                minute = (countTime / 1000 / 60 % 60);
+                second = (countTime / 1000 % 60);
+                Toast.makeText(TimerAlarmService.this, String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second) + " timer restarted", Toast.LENGTH_LONG).show();
             }
             stopSelf();
         }

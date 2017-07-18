@@ -34,7 +34,7 @@ public class StopwatchFragment extends Fragment {
     private Button lapButton;
     private Button resetButton;
     private TextView totalElaspedTimeTextView;
-    private Handler handler;
+    private Handler handler = new Handler();
     private ListView listView;
     private ArrayAdapter<String> adapter;
     private Runnable runnable = new Runnable() {
@@ -65,7 +65,6 @@ public class StopwatchFragment extends Fragment {
                 handler.postDelayed(runnable, 0);
             }
         });
-        handler = new Handler();
 
         pauseButton = (Button) view.findViewById(R.id.pauseButton);
         pauseButton.setOnClickListener(new View.OnClickListener() {

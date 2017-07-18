@@ -89,15 +89,17 @@
         app:layout_constraintRight_toRightOf="parent"
         />
 
+
     <Button
         android:id="@+id/startButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:text="Start"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:background="?attr/colorButtonNormal"
-        android:text="Start"/>
+        app:layout_constraintRight_toRightOf="parent"/>
 
     <TextView
         android:layout_width="0dp"
@@ -112,5 +114,28 @@
         android:visibility="invisible"
         app:layout_constraintVertical_bias="0.4"
         tools:text="12:45:45"/>
+
+    <Button
+        android:id="@+id/pauseButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="PAUSE"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/cancelButton"/>
+
+    <Button
+        android:id="@+id/cancelButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="CANCEL"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/pauseButton"
+        app:layout_constraintRight_toRightOf="parent"/>
+
 
 </android.support.constraint.ConstraintLayout>
