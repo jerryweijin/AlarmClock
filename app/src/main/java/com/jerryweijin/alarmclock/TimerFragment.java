@@ -6,9 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -27,6 +29,8 @@ import android.widget.TextView;
 
 public class TimerFragment extends Fragment {
     public static final String TAG = TimerFragment.class.getSimpleName();
+    private static final String KEY_TOTAL_COUNT_TIME = "KEY_TOTAL_COUNT_TIME";
+    private static final String KEY_REMAIN_COUNT_TIME = "KEY_REMAIN_COUNT_TIME";
     private NumberPicker hourPicker, minutePicker, secondPicker;
     private Button startButton, pauseButton, cancelButton;
     private TextView countDownTextView, hourMinuteSeparator, minuteSecondSeparator, hourLabel, minuteLabel, secondLabel;
@@ -34,6 +38,8 @@ public class TimerFragment extends Fragment {
     private int countTime, hour, minute, second, remainingTime;
     private Context context;
     private TimerNotificationService timerNotificationService;
+    SharedPreferences preferences;
+    SharedPreferences.Editor editor;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -42,9 +48,10 @@ public class TimerFragment extends Fragment {
             int remainTime = timerNotificationService.remainTime;
             if (remainTime != 0) {
                 startCountDownTimer(remainTime);
-                displayCountDown();
-            } else {
-                hideCountDown();
+                displayCountDown(remainTime);
+                startButton.setVisibility(View.INVISIBLE);
+                pauseButton.setVisibility(View.VISIBLE);
+                cancelButton.setVisibility(View.VISIBLE);
             }
             Log.i(TAG, "onServiceConnected");
         }
@@ -58,7 +65,7 @@ public class TimerFragment extends Fragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             startCountDownTimer(countTime);
-            displayCountDown();
+            displayCountDown(countTime);
         }
     };
 
@@ -80,8 +87,6 @@ public class TimerFragment extends Fragment {
         secondLabel = (TextView) view.findViewById(R.id.secondLabel);
         context = getContext();
 
-        configurePickers();
-
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,13 +96,17 @@ public class TimerFragment extends Fragment {
                 countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
                 if (countTime != 0) {
                     startCountDownTimer(countTime);
-                    displayCountDown();
+                    displayCountDown(countTime);
+
                     Intent intent = new Intent(context, TimerNotificationService.class);
                     intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
                     context.startService(intent);
                     startButton.setVisibility(View.INVISIBLE);
                     pauseButton.setVisibility(View.VISIBLE);
                     cancelButton.setVisibility(View.VISIBLE);;
+                    editor.putInt(KEY_TOTAL_COUNT_TIME, countTime);
+                    editor.putInt(KEY_REMAIN_COUNT_TIME, 0);
+                    editor.commit();
                 }
             }
         });
@@ -111,10 +120,18 @@ public class TimerFragment extends Fragment {
                     pauseButton.setText("RESUME");
                     stopCountDownTimer();
                     timerNotificationService.stopTimer();
+                    timerNotificationService.stopSelf();
+                    editor.putInt(KEY_REMAIN_COUNT_TIME, remainingTime);
+                    editor.commit();
                 } else {
                     pauseButton.setText("PAUSE");
                     startCountDownTimer(remainingTime);
-                    timerNotificationService.startTimer(remainingTime);
+                    //timerNotificationService.startTimer(remainingTime);
+                    Intent intent = new Intent(context, TimerNotificationService.class);
+                    intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+                    context.startService(intent);
+                    editor.putInt(KEY_REMAIN_COUNT_TIME, 0);
+                    editor.commit();
                 }
 
             }
@@ -126,14 +143,32 @@ public class TimerFragment extends Fragment {
                 startButton.setVisibility(View.VISIBLE);
                 pauseButton.setVisibility(View.INVISIBLE);
                 cancelButton.setVisibility(View.INVISIBLE);
+                pauseButton.setText("PAUSE");
                 stopCountDownTimer();
                 hideCountDown();
+                timerNotificationService.stopTimer();
+                timerNotificationService.stopSelf();
+                editor.putInt(KEY_REMAIN_COUNT_TIME, 0);
+                editor.commit();
             }
         });
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(TimerAlarmService.ACTION_RESTART);
         context.registerReceiver(receiver, intentFilter);
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        editor = preferences.edit();
+        countTime = preferences.getInt(KEY_TOTAL_COUNT_TIME, 0);
+        remainingTime = preferences.getInt(KEY_REMAIN_COUNT_TIME, 0);
+        configurePickers(countTime);
+        if (remainingTime != 0) {
+            displayCountDown(remainingTime);
+            startButton.setVisibility(View.INVISIBLE);
+            pauseButton.setVisibility(View.VISIBLE);
+            cancelButton.setVisibility(View.VISIBLE);
+            pauseButton.setText("RESUME");
+        }
         return view;
     }
 
@@ -162,8 +197,6 @@ public class TimerFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        //Log.i(TAG, "On Stop is called");
-        //Get time from countDownTimer
         stopCountDownTimer();
         context.unbindService(serviceConnection);
     }
@@ -174,31 +207,36 @@ public class TimerFragment extends Fragment {
         context.unregisterReceiver(receiver);
     }
 
-    private void configurePickers() {
+    private void configurePickers(int time) {
+        hour = time / 1000 / 60 / 60;
+        minute = time / 1000 / 60 % 60;
+        second = time / 1000 % 60;
+
         String[] hours = new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"};
         hourPicker.setMinValue(0);
         hourPicker.setMaxValue(hours.length-1);
         hourPicker.setDisplayedValues(hours);
+        hourPicker.setValue(hour);
 
         String[] minutes = new String[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59"};
         minutePicker.setMinValue(0);
         minutePicker.setMaxValue(minutes.length-1);
         minutePicker.setDisplayedValues(minutes);
+        minutePicker.setValue(minute);
 
         String[] seconds = new String[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59"};
         secondPicker.setMinValue(0);
         secondPicker.setMaxValue(seconds.length-1);
         secondPicker.setDisplayedValues(seconds);
+        secondPicker.setValue(second);
     }
 
     private void startCountDownTimer(int time) {
         countDownTimer = new CountDownTimer(time, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                hour = (int) (millisUntilFinished / 1000 / 60 / 60);
-                minute = (int) (millisUntilFinished / 1000 / 60 % 60);
-                second = (int) (millisUntilFinished / 1000 % 60);
-                countDownTextView.setText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second));
+                String timeString = convertTimeToString(millisUntilFinished);
+                countDownTextView.setText(timeString);
                 remainingTime = (int) millisUntilFinished;
             }
 
@@ -211,6 +249,13 @@ public class TimerFragment extends Fragment {
             }
         };
         countDownTimer.start();
+    }
+
+    private String convertTimeToString(long time) {
+        hour = (int) (time / 1000 / 60 / 60);
+        minute = (int) (time / 1000 / 60 % 60);
+        second = (int) (time / 1000 % 60);
+        return String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second);
     }
 
     private void stopCountDownTimer() {
@@ -231,8 +276,9 @@ public class TimerFragment extends Fragment {
         secondLabel.setVisibility(View.VISIBLE);
     }
 
-    private void displayCountDown() {
-        countDownTextView.setText("00 : 00 : 00");
+    private void displayCountDown(int time) {
+        String timeString = convertTimeToString(time);
+        countDownTextView.setText(timeString);
         countDownTextView.setVisibility(View.VISIBLE);
         hourPicker.setVisibility(View.INVISIBLE);
         minutePicker.setVisibility(View.INVISIBLE);

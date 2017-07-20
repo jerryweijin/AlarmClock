@@ -44,6 +44,7 @@ public class TimerNotificationService extends Service {
                 .setContentText("" + String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second))
                 .setContentIntent(pendingIntent);
         notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        Log.i(TAG, "onCreate is called");
     }
 
     @Override
@@ -55,6 +56,7 @@ public class TimerNotificationService extends Service {
         if (isServiceForeground) {
             startForeground(TIMER_NOTIFICATION, builder.build());
         }
+
 
         return Service.START_REDELIVER_INTENT;
     }
@@ -92,7 +94,7 @@ public class TimerNotificationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        //Log.i(TAG, "Service onDestroy is called");
+        Log.i(TAG, "Service onDestroy is called");
     }
 
     public void startTimer(int time) {
