@@ -8,7 +8,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -17,16 +16,8 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
-import android.widget.Chronometer;
 import android.widget.RemoteViews;
 import android.widget.Toast;
-
-import java.text.DateFormat;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
 
 /**
@@ -42,13 +33,11 @@ public class TimerAlarmService extends Service {
     private Ringtone ringtoneSound;
     private NotificationCompat.Builder builder;
     private NotificationManager notificationManager;
-    private int countTime;
+    private int totalCountTime;
     private int hour;
     private int minute;
     private int second;
     private long startTime;
-    private Handler handler;
-    private long elaspedTime;
     private RemoteViews remoteViews;
 
     private BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -58,11 +47,12 @@ public class TimerAlarmService extends Service {
             notificationManager.cancel(HEADS_UP_NOTIFICATION);
             if (intent.getAction().equals(ACTION_RESTART)) {
                 Intent serviceIntent = new Intent(TimerAlarmService.this, TimerNotificationService.class);
-                serviceIntent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+                serviceIntent.putExtra(TimerNotificationService.KEY_TOTAL_COUNT_TIME, totalCountTime);
+                serviceIntent.putExtra(TimerNotificationService.KEY_REMAIN_COUNT_TIME, totalCountTime);
                 startService(serviceIntent);
-                hour = (countTime / 1000 / 60 / 60);
-                minute = (countTime / 1000 / 60 % 60);
-                second = (countTime / 1000 % 60);
+                hour = (totalCountTime / 1000 / 60 / 60);
+                minute = (totalCountTime / 1000 / 60 % 60);
+                second = (totalCountTime / 1000 % 60);
                 Toast.makeText(TimerAlarmService.this, String.format("%02d", hour) + " : " + String.format("%02d", minute) + " : " + String.format("%02d", second) + " timer restarted", Toast.LENGTH_LONG).show();
             }
             stopSelf();
@@ -79,7 +69,7 @@ public class TimerAlarmService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        countTime = intent.getIntExtra(TimerNotificationService.KEY_COUNT_TIME, 0);
+        totalCountTime = intent.getIntExtra(TimerNotificationService.KEY_TOTAL_COUNT_TIME, 0);
 
         Intent activityIntent = new Intent(this, TimerActivity.class);
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, REQUEST_CODE, activityIntent, 0);

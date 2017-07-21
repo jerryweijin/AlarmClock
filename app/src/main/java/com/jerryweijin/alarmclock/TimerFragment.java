@@ -35,7 +35,7 @@ public class TimerFragment extends Fragment {
     private Button startButton, pauseButton, cancelButton;
     private TextView countDownTextView, hourMinuteSeparator, minuteSecondSeparator, hourLabel, minuteLabel, secondLabel;
     private CountDownTimer countDownTimer;
-    private int countTime, hour, minute, second, remainingTime;
+    private int totalCountTime, hour, minute, second, remainingTime;
     private Context context;
     private TimerNotificationService timerNotificationService;
     SharedPreferences preferences;
@@ -45,10 +45,10 @@ public class TimerFragment extends Fragment {
         public void onServiceConnected(ComponentName name, IBinder service) {
             TimerNotificationService.LocalBinder localBinder = (TimerNotificationService.LocalBinder) service;
             timerNotificationService = localBinder.getService();
-            int remainTime = timerNotificationService.remainTime;
-            if (remainTime != 0) {
-                startCountDownTimer(remainTime);
-                displayCountDown(remainTime);
+            int time = timerNotificationService.remainTime;
+            if (time != 0) {
+                startCountDownTimer(time);
+                displayCountDown(time);
                 startButton.setVisibility(View.INVISIBLE);
                 pauseButton.setVisibility(View.VISIBLE);
                 cancelButton.setVisibility(View.VISIBLE);
@@ -64,8 +64,8 @@ public class TimerFragment extends Fragment {
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            startCountDownTimer(countTime);
-            displayCountDown(countTime);
+            startCountDownTimer(totalCountTime);
+            displayCountDown(totalCountTime);
         }
     };
 
@@ -93,18 +93,19 @@ public class TimerFragment extends Fragment {
                 second = secondPicker.getValue();
                 minute = minutePicker.getValue();
                 hour = hourPicker.getValue();
-                countTime = hour*60*60*1000 + minute*60*1000 + second*1000;
-                if (countTime != 0) {
-                    startCountDownTimer(countTime);
-                    displayCountDown(countTime);
+                totalCountTime = hour*60*60*1000 + minute*60*1000 + second*1000;
+                if (totalCountTime != 0) {
+                    startCountDownTimer(totalCountTime);
+                    displayCountDown(totalCountTime);
 
                     Intent intent = new Intent(context, TimerNotificationService.class);
-                    intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+                    intent.putExtra(TimerNotificationService.KEY_TOTAL_COUNT_TIME, totalCountTime);
+                    intent.putExtra(TimerNotificationService.KEY_REMAIN_COUNT_TIME, totalCountTime);
                     context.startService(intent);
                     startButton.setVisibility(View.INVISIBLE);
                     pauseButton.setVisibility(View.VISIBLE);
                     cancelButton.setVisibility(View.VISIBLE);;
-                    editor.putInt(KEY_TOTAL_COUNT_TIME, countTime);
+                    editor.putInt(KEY_TOTAL_COUNT_TIME, totalCountTime);
                     editor.putInt(KEY_REMAIN_COUNT_TIME, 0);
                     editor.commit();
                 }
@@ -128,7 +129,8 @@ public class TimerFragment extends Fragment {
                     startCountDownTimer(remainingTime);
                     //timerNotificationService.startTimer(remainingTime);
                     Intent intent = new Intent(context, TimerNotificationService.class);
-                    intent.putExtra(TimerNotificationService.KEY_COUNT_TIME, countTime);
+                    intent.putExtra(TimerNotificationService.KEY_TOTAL_COUNT_TIME, totalCountTime);
+                    intent.putExtra(TimerNotificationService.KEY_REMAIN_COUNT_TIME, remainingTime);
                     context.startService(intent);
                     editor.putInt(KEY_REMAIN_COUNT_TIME, 0);
                     editor.commit();
@@ -159,9 +161,9 @@ public class TimerFragment extends Fragment {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(context);
         editor = preferences.edit();
-        countTime = preferences.getInt(KEY_TOTAL_COUNT_TIME, 0);
+        totalCountTime = preferences.getInt(KEY_TOTAL_COUNT_TIME, 0);
         remainingTime = preferences.getInt(KEY_REMAIN_COUNT_TIME, 0);
-        configurePickers(countTime);
+        configurePickers(totalCountTime);
         if (remainingTime != 0) {
             displayCountDown(remainingTime);
             startButton.setVisibility(View.INVISIBLE);

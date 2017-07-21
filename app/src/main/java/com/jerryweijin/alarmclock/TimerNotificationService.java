@@ -3,10 +3,8 @@ package com.jerryweijin.alarmclock;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.CountDownTimer;
 import android.os.IBinder;
@@ -21,11 +19,12 @@ import android.util.Log;
 
 public class TimerNotificationService extends Service {
     public static final String TAG = TimerNotificationService.class.getSimpleName();
-    public static final String KEY_COUNT_TIME = "KEY_COUNT_TIME";
+    public static final String KEY_TOTAL_COUNT_TIME = "KEY_TOTAL_COUNT_TIME";
+    public static final String KEY_REMAIN_COUNT_TIME = "KEY_REMAIN_COUNT_TIME";
     private boolean isServiceForeground = true;
     private static final int REQUEST_CODE = 1;
     public static final int TIMER_NOTIFICATION = 2;
-    int countTime, remainTime;
+    int totalCountTime, remainTime;
     int hour;
     int minute;
     int second;
@@ -50,8 +49,9 @@ public class TimerNotificationService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         //Log.i(TAG, "onStartCommand is called");
-        countTime = intent.getIntExtra(KEY_COUNT_TIME, 0);
-        startTimer(countTime);
+        totalCountTime = intent.getIntExtra(KEY_TOTAL_COUNT_TIME, 0);
+        remainTime = intent.getIntExtra(KEY_REMAIN_COUNT_TIME, 0);
+        startTimer(remainTime);
 
         if (isServiceForeground) {
             startForeground(TIMER_NOTIFICATION, builder.build());
@@ -116,7 +116,7 @@ public class TimerNotificationService extends Service {
             @Override
             public void onFinish() {
                 Intent serviceIntent = new Intent(TimerNotificationService.this, TimerAlarmService.class);
-                serviceIntent.putExtra(KEY_COUNT_TIME, countTime);
+                serviceIntent.putExtra(KEY_TOTAL_COUNT_TIME, totalCountTime);
                 startService(serviceIntent);
                 stopSelf();
                 //Log.i(TAG, "onFinished is called");
